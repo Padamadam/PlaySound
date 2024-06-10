@@ -25,32 +25,16 @@ import androidx.core.view.WindowInsetsCompat
 
 class MainActivity : AppCompatActivity() {
 
-    private lateinit var playSound1: ImageButton
-    private lateinit var playSound2: ImageButton
-    private lateinit var playSound3: ImageButton
-
-    private lateinit var soundTitle1: EditText
-    private lateinit var soundTitle2: EditText
-    private lateinit var soundTitle3: EditText
-
-    private lateinit var chooseSound1: Button
-    private lateinit var chooseSound2: Button
-    private lateinit var chooseSound3: Button
+    private lateinit var playButtons: Array<ImageButton>
+    private lateinit var soundTitles: Array<EditText>
+    private lateinit var chooseButtons: Array<Button>
+    private lateinit var mediaPlayers: Array<MediaPlayer?>
+    private lateinit var soundUris: Array<Uri?>
 
     private lateinit var mixSound: Switch
 
     private var currentButtonId: Int = 0
-
-    private var mediaPlayer1: MediaPlayer? = null
-    private var mediaPlayer2: MediaPlayer? = null
-    private var mediaPlayer3: MediaPlayer? = null
-    private var soundUri1: Uri? = null
-    private var soundUri2: Uri? = null
-    private var soundUri3: Uri? = null
-
-    private var isPlaying1 = false
-    private var isPlaying2 = false
-    private var isPlaying3 = false
+    private var isOnPlayArray: BooleanArray = booleanArrayOf(false, false, false)
 
     @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -63,27 +47,21 @@ class MainActivity : AppCompatActivity() {
             insets
         }
 
-        playSound1 = findViewById(R.id.playSound1)
-        playSound2 = findViewById(R.id.playSound2)
-        playSound3 = findViewById(R.id.playSound3)
-
-        soundTitle1 = findViewById(R.id.soundTitle1)
-        soundTitle2 = findViewById(R.id.soundTitle2)
-        soundTitle3 = findViewById(R.id.soundTitle3)
-
-        chooseSound1 = findViewById(R.id.chooseSound1)
-        chooseSound2 = findViewById(R.id.chooseSound2)
-        chooseSound3 = findViewById(R.id.chooseSound3)
+        playButtons = arrayOf(findViewById(R.id.playSound1), findViewById(R.id.playSound2), findViewById(R.id.playSound3))
+        soundTitles = arrayOf(findViewById(R.id.soundTitle1), findViewById(R.id.soundTitle2), findViewById(R.id.soundTitle3))
+        chooseButtons = arrayOf(findViewById(R.id.chooseSound1), findViewById(R.id.chooseSound2), findViewById(R.id.chooseSound3))
+        mediaPlayers = arrayOfNulls(3)
+        soundUris = arrayOfNulls(3)
 
         mixSound = findViewById(R.id.mixSound)
 
-        chooseSound1.setOnClickListener { chooseSound(1) }
-        chooseSound2.setOnClickListener { chooseSound(2) }
-        chooseSound3.setOnClickListener { chooseSound(3) }
+        chooseButtons.forEachIndexed { index, button ->
+            button.setOnClickListener { chooseSound(index) }
+        }
 
-        playSound1.setOnClickListener { playSound(soundUri1, playSound1, 1) }
-        playSound2.setOnClickListener { playSound(soundUri2, playSound2, 2) }
-        playSound3.setOnClickListener { playSound(soundUri3, playSound3, 3) }
+        playButtons.forEachIndexed { index, button ->
+            button.setOnClickListener { playSound(soundUris[index], button, index) }
+        }
 
         checkPermissions()
     }
@@ -91,20 +69,8 @@ class MainActivity : AppCompatActivity() {
     private val chooseSoundLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result: ActivityResult ->
         if (result.resultCode == Activity.RESULT_OK) {
             result.data?.data?.let { uri ->
-                when (currentButtonId) {
-                    1 -> {
-                        soundUri1 = uri
-                        soundTitle1.setText(uri.lastPathSegment)
-                    }
-                    2 -> {
-                        soundUri2 = uri
-                        soundTitle2.setText(uri.lastPathSegment)
-                    }
-                    3 -> {
-                        soundUri3 = uri
-                        soundTitle3.setText(uri.lastPathSegment)
-                    }
-                }
+                soundUris[currentButtonId] = uri
+                soundTitles[currentButtonId].setText(uri.lastPathSegment)
             }
         }
     }
@@ -118,97 +84,43 @@ class MainActivity : AppCompatActivity() {
         chooseSoundLauncher.launch(intent)
     }
 
-    private fun playSound(uri: Uri?, playButton: ImageButton, soundId: Int) {
+    private fun playSound(uri: Uri?, playButton: ImageButton, index: Int) {
         if (uri == null) return
 
-        when (soundId) {
-            1 -> {
-                if (isPlaying1) {
-                    stopIndividualSound(mediaPlayer1, playButton, soundId)
-                } else {
-                    playIndividualSound(uri, playButton, soundId)
-                }
+        if (isOnPlayArray[index]) {
+            stopIndividualSound(mediaPlayers[index], playButton, index)
+        } else {
+            if (!mixSound.isChecked) {
+                stopSound()
             }
-            2 -> {
-                if (isPlaying2) {
-                    stopIndividualSound(mediaPlayer2, playButton, soundId)
-                } else {
-                    playIndividualSound(uri, playButton, soundId)
-                }
-            }
-            3 -> {
-                if (isPlaying3) {
-                    stopIndividualSound(mediaPlayer3, playButton, soundId)
-                } else {
-                    playIndividualSound(uri, playButton, soundId)
-                }
-            }
+            playIndividualSound(uri, playButton, index)
         }
     }
 
-    private fun playIndividualSound(uri: Uri, playButton: ImageButton, soundId: Int) {
+    private fun playIndividualSound(uri: Uri, playButton: ImageButton, index: Int) {
         val mediaPlayer = MediaPlayer().apply {
             setDataSource(this@MainActivity, uri)
             prepare()
             start()
             setOnCompletionListener {
                 it.release()
-                when (soundId) {
-                    1 -> {
-                        mediaPlayer1 = null
-                        isPlaying1 = false
-                    }
-                    2 -> {
-                        mediaPlayer2 = null
-                        isPlaying2 = false
-                    }
-                    3 -> {
-                        mediaPlayer3 = null
-                        isPlaying3 = false
-                    }
-                }
+                mediaPlayers[index] = null
+                isOnPlayArray[index] = false
                 playButton.setImageResource(android.R.drawable.ic_media_play)
             }
         }
 
-        when (soundId) {
-            1 -> {
-                mediaPlayer1?.release()
-                mediaPlayer1 = mediaPlayer
-                isPlaying1 = true
-            }
-            2 -> {
-                mediaPlayer2?.release()
-                mediaPlayer2 = mediaPlayer
-                isPlaying2 = true
-            }
-            3 -> {
-                mediaPlayer3?.release()
-                mediaPlayer3 = mediaPlayer
-                isPlaying3 = true
-            }
-        }
-
+        mediaPlayers[index]?.release()
+        mediaPlayers[index] = mediaPlayer
+        isOnPlayArray[index] = true
         playButton.setImageResource(android.R.drawable.ic_media_pause)
     }
 
-    private fun stopIndividualSound(mediaPlayer: MediaPlayer?, playButton: ImageButton, soundId: Int) {
+    private fun stopIndividualSound(mediaPlayer: MediaPlayer?, playButton: ImageButton, index: Int) {
         mediaPlayer?.stop()
         mediaPlayer?.release()
-        when (soundId) {
-            1 -> {
-                mediaPlayer1 = null
-                isPlaying1 = false
-            }
-            2 -> {
-                mediaPlayer2 = null
-                isPlaying2 = false
-            }
-            3 -> {
-                mediaPlayer3 = null
-                isPlaying3 = false
-            }
-        }
+        mediaPlayers[index] = null
+        isOnPlayArray[index] = false
         playButton.setImageResource(android.R.drawable.ic_media_play)
     }
 
@@ -227,29 +139,17 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun stopSound() {
-        mediaPlayer1?.stop()
-        mediaPlayer1?.release()
-        mediaPlayer1 = null
-        mediaPlayer2?.stop()
-        mediaPlayer2?.release()
-        mediaPlayer2 = null
-        mediaPlayer3?.stop()
-        mediaPlayer3?.release()
-        mediaPlayer3 = null
-
-        playSound1.setImageResource(android.R.drawable.ic_media_play)
-        playSound2.setImageResource(android.R.drawable.ic_media_play)
-        playSound3.setImageResource(android.R.drawable.ic_media_play)
-
-        isPlaying1 = false
-        isPlaying2 = false
-        isPlaying3 = false
+        for (i in mediaPlayers.indices) {
+            mediaPlayers[i]?.stop()
+            mediaPlayers[i]?.release()
+            mediaPlayers[i] = null
+            playButtons[i].setImageResource(android.R.drawable.ic_media_play)
+            isOnPlayArray[i] = false
+        }
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        mediaPlayer1?.release()
-        mediaPlayer2?.release()
-        mediaPlayer3?.release()
+        mediaPlayers.forEach { it?.release() }
     }
 }
