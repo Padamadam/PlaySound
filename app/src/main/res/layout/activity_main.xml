@@ -61,7 +61,7 @@
 
             <EditText
                 android:id="@+id/soundTitle1"
-                android:layout_width="200dp"
+                android:layout_width="230dp"
                 android:layout_height="wrap_content"
                 android:ems="10"
                 android:fontFamily="monospace"
@@ -70,14 +70,12 @@
                 android:textAlignment="center"
                 android:textSize="12sp" />
 
-            <Button
+            <ImageButton
                 android:id="@+id/chooseSound1"
-                android:layout_width="30dp"
-                android:layout_height="match_parent"
-                android:layout_weight="1"
-                android:fontFamily="monospace"
-                android:text="@string/choose"
-                android:textSize="9sp" />
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:contentDescription="@string/choose_sound"
+                app:srcCompat="@android:drawable/ic_menu_edit" />
 
             <ImageButton
                 android:id="@+id/recordSound1"
@@ -101,7 +99,7 @@
 
             <EditText
                 android:id="@+id/soundTitle2"
-                android:layout_width="200dp"
+                android:layout_width="230dp"
                 android:layout_height="wrap_content"
                 android:ems="10"
                 android:fontFamily="monospace"
@@ -110,14 +108,12 @@
                 android:textAlignment="center"
                 android:textSize="12sp" />
 
-            <Button
+            <ImageButton
                 android:id="@+id/chooseSound2"
-                android:layout_width="30dp"
-                android:layout_height="match_parent"
-                android:layout_weight="1"
-                android:fontFamily="monospace"
-                android:text="@string/choose"
-                android:textSize="9sp" />
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:contentDescription="@string/choose_sound"
+                app:srcCompat="@android:drawable/ic_menu_edit" />
 
             <ImageButton
                 android:id="@+id/recordSound2"
@@ -141,7 +137,7 @@
 
             <EditText
                 android:id="@+id/soundTitle3"
-                android:layout_width="200dp"
+                android:layout_width="230dp"
                 android:layout_height="wrap_content"
                 android:ems="10"
                 android:fontFamily="monospace"
@@ -150,14 +146,12 @@
                 android:textAlignment="center"
                 android:textSize="12sp" />
 
-            <Button
+            <ImageButton
                 android:id="@+id/chooseSound3"
-                android:layout_width="30dp"
-                android:layout_height="match_parent"
-                android:layout_weight="1"
-                android:fontFamily="monospace"
-                android:text="@string/choose"
-                android:textSize="9sp" />
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:contentDescription="@string/choose_sound"
+                app:srcCompat="@android:drawable/ic_menu_edit" />
 
             <ImageButton
                 android:id="@+id/recordSound3"

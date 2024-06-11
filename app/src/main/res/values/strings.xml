@@ -2,7 +2,7 @@
     <string name="app_name">PlaySound</string>
     <string name="play_sound">Play Sound</string>
     <string name="no_sound_selected">No sound selected</string>
-    <string name="choose">Choose</string>
     <string name="record_sound">Record sound</string>
     <string name="play">Play</string>
+    <string name="choose_sound">Choose sound</string>
 </resources>

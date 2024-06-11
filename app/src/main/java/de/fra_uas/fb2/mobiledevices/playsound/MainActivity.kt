@@ -5,9 +5,11 @@ import android.app.Activity
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.media.MediaPlayer
+import android.media.MediaRecorder
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.Environment
 import android.widget.Button
 import android.widget.EditText
 import android.widget.ImageButton
@@ -22,19 +24,26 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import java.io.File
+import java.io.IOException
 
 class MainActivity : AppCompatActivity() {
 
     private lateinit var playButtons: Array<ImageButton>
     private lateinit var soundTitles: Array<EditText>
-    private lateinit var chooseButtons: Array<Button>
+    private lateinit var chooseButtons: Array<ImageButton>
     private lateinit var mediaPlayers: Array<MediaPlayer?>
     private lateinit var soundUris: Array<Uri?>
+    private lateinit var recordButtons: Array<ImageButton>
 
     private lateinit var mixSound: Switch
 
     private var currentButtonId: Int = 0
     private var isOnPlayArray: BooleanArray = booleanArrayOf(false, false, false)
+    private var isRecordingArray: BooleanArray = booleanArrayOf(false, false, false)
+
+    private var mediaRecorder: MediaRecorder? = null
+    private var recordedFilePaths: Array<String?> = arrayOfNulls(3)
 
     @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -50,6 +59,7 @@ class MainActivity : AppCompatActivity() {
         playButtons = arrayOf(findViewById(R.id.playSound1), findViewById(R.id.playSound2), findViewById(R.id.playSound3))
         soundTitles = arrayOf(findViewById(R.id.soundTitle1), findViewById(R.id.soundTitle2), findViewById(R.id.soundTitle3))
         chooseButtons = arrayOf(findViewById(R.id.chooseSound1), findViewById(R.id.chooseSound2), findViewById(R.id.chooseSound3))
+        recordButtons = arrayOf(findViewById(R.id.recordSound1), findViewById(R.id.recordSound2), findViewById(R.id.recordSound3))
         mediaPlayers = arrayOfNulls(3)
         soundUris = arrayOfNulls(3)
 
@@ -61,6 +71,10 @@ class MainActivity : AppCompatActivity() {
 
         playButtons.forEachIndexed { index, button ->
             button.setOnClickListener { playSound(soundUris[index], button, index) }
+        }
+
+        recordButtons.forEachIndexed { index, button ->
+            button.setOnClickListener { toggleRecording(index) }
         }
 
         checkPermissions()
@@ -85,7 +99,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun playSound(uri: Uri?, playButton: ImageButton, index: Int) {
-        if (uri == null) return
+        val uriToPlay = uri ?: recordedFilePaths[index]?.let { Uri.fromFile(File(it)) } ?: return
 
         if (isOnPlayArray[index]) {
             stopIndividualSound(mediaPlayers[index], playButton, index)
@@ -93,20 +107,25 @@ class MainActivity : AppCompatActivity() {
             if (!mixSound.isChecked) {
                 stopSound()
             }
-            playIndividualSound(uri, playButton, index)
+            playIndividualSound(uriToPlay, playButton, index)
         }
     }
 
     private fun playIndividualSound(uri: Uri, playButton: ImageButton, index: Int) {
         val mediaPlayer = MediaPlayer().apply {
-            setDataSource(this@MainActivity, uri)
-            prepare()
-            start()
-            setOnCompletionListener {
-                it.release()
-                mediaPlayers[index] = null
-                isOnPlayArray[index] = false
-                playButton.setImageResource(android.R.drawable.ic_media_play)
+            try {
+                setDataSource(this@MainActivity, uri)
+                prepare()
+                start()
+                setOnCompletionListener {
+                    it.release()
+                    mediaPlayers[index] = null
+                    isOnPlayArray[index] = false
+                    playButton.setImageResource(android.R.drawable.ic_media_play)
+                }
+            } catch (e: IOException) {
+                e.printStackTrace()
+                Toast.makeText(this@MainActivity, "Error playing sound", Toast.LENGTH_SHORT).show()
             }
         }
 
@@ -122,6 +141,50 @@ class MainActivity : AppCompatActivity() {
         mediaPlayers[index] = null
         isOnPlayArray[index] = false
         playButton.setImageResource(android.R.drawable.ic_media_play)
+    }
+
+    private fun toggleRecording(index: Int) {
+        if (isRecordingArray[index]) {
+            stopRecording(index)
+        } else {
+            startRecording(index)
+        }
+    }
+
+    private fun startRecording(index: Int) {
+        val fileName = "${externalCacheDir?.absolutePath}/audiorecordtest${index}.3gp"
+        recordedFilePaths[index] = fileName
+
+        mediaRecorder = MediaRecorder().apply {
+            setAudioSource(MediaRecorder.AudioSource.MIC)
+            setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP)
+            setOutputFile(fileName)
+            setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB)
+            try {
+                prepare()
+                start()
+                isRecordingArray[index] = true
+                recordButtons[index].setImageResource(android.R.drawable.ic_menu_close_clear_cancel)
+                Toast.makeText(this@MainActivity, "Recording started", Toast.LENGTH_SHORT).show()
+            } catch (e: IOException) {
+                e.printStackTrace()
+                Toast.makeText(this@MainActivity, "Error starting recording", Toast.LENGTH_SHORT).show()
+                mediaRecorder?.release()
+                mediaRecorder = null
+            }
+        }
+    }
+
+    private fun stopRecording(index: Int) {
+        mediaRecorder?.apply {
+            stop()
+            release()
+        }
+        mediaRecorder = null
+        isRecordingArray[index] = false
+        recordButtons[index].setImageResource(android.R.drawable.ic_btn_speak_now)
+        soundTitles[index].setText("Recorded Sound ${index + 1}")
+        Toast.makeText(this, "Recording stopped", Toast.LENGTH_SHORT).show()
     }
 
     @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
