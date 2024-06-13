@@ -20,6 +20,7 @@ import androidx.activity.result.ActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
@@ -48,6 +49,7 @@ class MainActivity : AppCompatActivity() {
     @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO);
         enableEdgeToEdge()
         setContentView(R.layout.activity_main)
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
@@ -76,6 +78,8 @@ class MainActivity : AppCompatActivity() {
         recordButtons.forEachIndexed { index, button ->
             button.setOnClickListener { toggleRecording(index) }
         }
+
+        mixSound.setOnClickListener{ handleSwitchChange() }
 
         checkPermissions()
     }
@@ -125,7 +129,7 @@ class MainActivity : AppCompatActivity() {
                 }
             } catch (e: IOException) {
                 e.printStackTrace()
-                Toast.makeText(this@MainActivity, "Error playing sound", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this@MainActivity, getString(R.string.error_playing), Toast.LENGTH_SHORT).show()
             }
         }
 
@@ -152,23 +156,23 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun startRecording(index: Int) {
-        val fileName = "${externalCacheDir?.absolutePath}/audiorecordtest${index}.3gp"
+        val fileName = "${externalCacheDir?.absolutePath}/audiorecordtest${index}.mp3"
         recordedFilePaths[index] = fileName
 
         mediaRecorder = MediaRecorder().apply {
             setAudioSource(MediaRecorder.AudioSource.MIC)
-            setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP)
+            setOutputFormat(MediaRecorder.OutputFormat.MPEG_2_TS)
+            setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
             setOutputFile(fileName)
-            setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB)
             try {
                 prepare()
                 start()
                 isRecordingArray[index] = true
                 recordButtons[index].setImageResource(android.R.drawable.ic_menu_close_clear_cancel)
-                Toast.makeText(this@MainActivity, "Recording started", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this@MainActivity, getString(R.string.recording_started), Toast.LENGTH_SHORT).show()
             } catch (e: IOException) {
                 e.printStackTrace()
-                Toast.makeText(this@MainActivity, "Error starting recording", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this@MainActivity, getString(R.string.error_starting_recording), Toast.LENGTH_SHORT).show()
                 mediaRecorder?.release()
                 mediaRecorder = null
             }
@@ -183,8 +187,9 @@ class MainActivity : AppCompatActivity() {
         mediaRecorder = null
         isRecordingArray[index] = false
         recordButtons[index].setImageResource(android.R.drawable.ic_btn_speak_now)
-        soundTitles[index].setText("Recorded Sound ${index + 1}")
-        Toast.makeText(this, "Recording stopped", Toast.LENGTH_SHORT).show()
+        var recordedSound = getString(R.string.recorded_sound)
+        soundTitles[index].setText(recordedSound + " " + (index + 1).toString())
+        Toast.makeText(this, getString(R.string.recording_stopped), Toast.LENGTH_SHORT).show()
     }
 
     @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
@@ -197,7 +202,7 @@ class MainActivity : AppCompatActivity() {
 
         if (!permissions.all { ContextCompat.checkSelfPermission(this, it) == PackageManager.PERMISSION_GRANTED }) {
             ActivityCompat.requestPermissions(this, permissions, 1)
-            Toast.makeText(this, "No permissions granted", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, getString(R.string.permission_not_granted), Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -208,6 +213,15 @@ class MainActivity : AppCompatActivity() {
             mediaPlayers[i] = null
             playButtons[i].setImageResource(android.R.drawable.ic_media_play)
             isOnPlayArray[i] = false
+        }
+    }
+
+    private fun handleSwitchChange(){
+        stopSound()
+        if(mixSound.isChecked){
+            mixSound.text = getString(R.string.mix_sound_on)
+        }else{
+            mixSound.text = getString(R.string.mix_sound_off)
         }
     }
 

@@ -5,4 +5,13 @@
     <string name="record_sound">Record sound</string>
     <string name="play">Play</string>
     <string name="choose_sound">Choose sound</string>
+    <string name="mix_sound_on">MixSound On</string>
+    <string name="mix_sound_off">MixSound Off</string>
+    <string name="permission_not_granted">Permission not granted!</string>
+    <string name="recording_stopped">Recording stopped</string>
+    <string name="recorded_sound">Recorded Sound</string>
+    <string name="error_starting_recording">Error starting recording</string>
+    <string name="recording_started">Recording started</string>
+    <string name="error_playing">Error playing sound</string>
+
 </resources>
