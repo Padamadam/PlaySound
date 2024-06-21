@@ -262,11 +262,11 @@ class MainActivity : AppCompatActivity() {
         var fileName: String? = null
         when (index) {
             1 -> {
-                fileName = "${externalCacheDir?.absolutePath}/audiorecordtest${index}.mp3"
+                fileName = "${externalCacheDir?.absolutePath}/audiorecordtest${index}.amr"
                 recordedFilePath1 = fileName
             }
             2 -> {
-                fileName = "${externalCacheDir?.absolutePath}/audiorecordtest${index}.amr"
+                fileName = "${externalCacheDir?.absolutePath}/audiorecordtest${index}.m4a"
                 recordedFilePath2 = fileName
             }
             3 -> {
@@ -281,20 +281,18 @@ class MainActivity : AppCompatActivity() {
             try {
                 when (index) {
                     1 -> {
-//                      Mono/Stereo 8-320Kbps constant (CBR) or variable bit-rate (VBR)
-                        setOutputFormat(MediaRecorder.OutputFormat.MPEG_2_TS)
-                        setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
-                    }
-                    2 -> {
-//                        9 rates from 6.60 kbit/s to 23.85 kbit/s sampled @ 16kHz
                         setOutputFormat(MediaRecorder.OutputFormat.AMR_NB)
                         setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB)
+//                        setAudioEncodingBitRate()
+//                        setAudioSamplingRate()
+                    }
+                    2 -> {
+                        setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
+                        setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
                     }
                     3 -> {
-//                        Support for mono/stereo/5.0/5.1 content
-//                        with standard sampling rates from 8 to 48 kHz.
                         setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP)
-                        setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
+                        setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB)
                     }
                 }
                 prepare()
@@ -333,12 +331,12 @@ class MainActivity : AppCompatActivity() {
             1 -> {
                 isRecording1 = false
                 recordButton1.setImageResource(android.R.drawable.ic_btn_speak_now)
-                soundTitle1.setText(".mp3 format")
+                soundTitle1.setText(".amr format")
             }
             2 -> {
                 isRecording2 = false
                 recordButton2.setImageResource(android.R.drawable.ic_btn_speak_now)
-                soundTitle2.setText(".amr format")
+                soundTitle2.setText(".aac format")
             }
             3 -> {
                 isRecording3 = false
