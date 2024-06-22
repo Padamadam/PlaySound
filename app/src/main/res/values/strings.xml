@@ -13,5 +13,7 @@
     <string name="error_starting_recording">Error starting recording</string>
     <string name="recording_started">Recording started</string>
     <string name="error_playing">Error playing sound</string>
+    <string name="cannot_delete_last_bar">Cannot delete the last bar</string>
+    <string name="delete_sound">Delete sound</string>
 
 </resources>

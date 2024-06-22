@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal">
+
+
+    <ImageButton
+        android:id="@+id/playSound"
+        android:layout_width="35dp"
+        android:layout_height="wrap_content"
+        android:contentDescription="@string/play"
+        app:srcCompat="@android:drawable/ic_media_play" />
+
+    <EditText
+        android:id="@+id/soundTitle"
+        android:layout_width="210dp"
+        android:layout_height="wrap_content"
+        android:ems="10"
+        android:fontFamily="monospace"
+        android:inputType="text"
+        android:text="@string/no_sound_selected"
+        android:textAlignment="center"
+        android:textSize="12sp" />
+
+    <ImageButton
+        android:id="@+id/chooseSound"
+        android:layout_width="35dp"
+        android:layout_height="wrap_content"
+        android:contentDescription="@string/choose_sound"
+        app:srcCompat="@android:drawable/ic_menu_edit" />
+
+    <ImageButton
+        android:id="@+id/recordSound"
+        android:layout_width="35dp"
+        android:layout_height="wrap_content"
+        android:contentDescription="@string/record_sound"
+        app:srcCompat="@android:drawable/ic_btn_speak_now" />
+
+    <ImageButton
+        android:id="@+id/deleteSound"
+        android:layout_width="35dp"
+        android:layout_height="wrap_content"
+        android:contentDescription="@string/delete_sound"
+        app:srcCompat="@android:drawable/ic_menu_delete" />
+</LinearLayout>

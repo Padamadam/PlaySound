@@ -10,9 +10,14 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.Environment
+import android.provider.MediaStore
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
 import android.widget.Button
 import android.widget.EditText
 import android.widget.ImageButton
+import android.widget.LinearLayout
 import android.widget.Switch
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
@@ -21,35 +26,43 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
+import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.size
 import java.io.File
 import java.io.IOException
 
 class MainActivity : AppCompatActivity() {
 
-    private lateinit var playButtons: Array<ImageButton>
-    private lateinit var soundTitles: Array<EditText>
-    private lateinit var chooseButtons: Array<ImageButton>
-    private lateinit var mediaPlayers: Array<MediaPlayer?>
-    private lateinit var soundUris: Array<Uri?>
-    private lateinit var recordButtons: Array<ImageButton>
+    private lateinit var playButtons: ArrayList<ImageButton>
+    private lateinit var soundTitles: ArrayList<EditText>
+    private lateinit var chooseButtons: ArrayList<ImageButton>
+    private lateinit var deleteButtons: ArrayList<ImageButton>
+    private lateinit var mediaPlayers: ArrayList<MediaPlayer?>
+    private lateinit var soundUris: ArrayList<Uri?>
+    private lateinit var recordButtons: ArrayList<ImageButton>
+
+    private lateinit var soundsContainer: LinearLayout
+
 
     private lateinit var mixSound: Switch
 
+    private val MAX_SOUND_NUM: Int = 6
+
     private var currentButtonId: Int = 0
-    private var isOnPlayArray: BooleanArray = booleanArrayOf(false, false, false)
-    private var isRecordingArray: BooleanArray = booleanArrayOf(false, false, false)
+    private var isOnPlayArray: ArrayList<Boolean> = arrayListOf(false, false, false)
+    private var isRecordingArray: ArrayList<Boolean> = arrayListOf(false, false, false)
 
     private var mediaRecorder: MediaRecorder? = null
-    private var recordedFilePaths: Array<String?> = arrayOfNulls(3)
+    private var recordedFilePaths: ArrayList<String?> = arrayListOf(null, null, null)
 
     @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO);
+        AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
         enableEdgeToEdge()
         setContentView(R.layout.activity_main)
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
@@ -58,12 +71,15 @@ class MainActivity : AppCompatActivity() {
             insets
         }
 
-        playButtons = arrayOf(findViewById(R.id.playSound1), findViewById(R.id.playSound2), findViewById(R.id.playSound3))
-        soundTitles = arrayOf(findViewById(R.id.soundTitle1), findViewById(R.id.soundTitle2), findViewById(R.id.soundTitle3))
-        chooseButtons = arrayOf(findViewById(R.id.chooseSound1), findViewById(R.id.chooseSound2), findViewById(R.id.chooseSound3))
-        recordButtons = arrayOf(findViewById(R.id.recordSound1), findViewById(R.id.recordSound2), findViewById(R.id.recordSound3))
-        mediaPlayers = arrayOfNulls(3)
-        soundUris = arrayOfNulls(3)
+        playButtons = arrayListOf(findViewById(R.id.playSound1), findViewById(R.id.playSound2), findViewById(R.id.playSound3))
+        soundTitles = arrayListOf(findViewById(R.id.soundTitle1), findViewById(R.id.soundTitle2), findViewById(R.id.soundTitle3))
+        chooseButtons = arrayListOf(findViewById(R.id.chooseSound1), findViewById(R.id.chooseSound2), findViewById(R.id.chooseSound3))
+        recordButtons = arrayListOf(findViewById(R.id.recordSound1), findViewById(R.id.recordSound2), findViewById(R.id.recordSound3))
+        deleteButtons = arrayListOf(findViewById(R.id.deleteSound1), findViewById(R.id.deleteSound2), findViewById(R.id.deleteSound3))
+        mediaPlayers = arrayListOf(null, null, null)
+        soundUris = arrayListOf(null, null, null)
+
+        soundsContainer = findViewById(R.id.soundsContainer)
 
         mixSound = findViewById(R.id.mixSound)
 
@@ -79,19 +95,44 @@ class MainActivity : AppCompatActivity() {
             button.setOnClickListener { toggleRecording(index) }
         }
 
-        mixSound.setOnClickListener{ handleSwitchChange() }
+        deleteButtons.forEachIndexed { index, button ->
+            button.setOnClickListener { deleteSound(index) }
+        }
+
+        mixSound.setOnClickListener { handleSwitchChange() }
 
         checkPermissions()
+
+        findViewById<Button>(R.id.addBarButton).setOnClickListener {
+            if(soundsContainer.size < MAX_SOUND_NUM) {
+                addNewBar()
+            }else{
+                Toast.makeText(this, "Cannot add more than $MAX_SOUND_NUM", Toast.LENGTH_SHORT).show()
+            }
+        }
     }
 
     private val chooseSoundLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result: ActivityResult ->
         if (result.resultCode == Activity.RESULT_OK) {
             result.data?.data?.let { uri ->
                 soundUris[currentButtonId] = uri
-                soundTitles[currentButtonId].setText(uri.lastPathSegment)
+                val title = getDisplayNameFromUri(uri)
+                soundTitles[currentButtonId].setText(title)
             }
         }
     }
+
+    private fun getDisplayNameFromUri(uri: Uri): String? {
+        var displayName: String? = null
+        val projection = arrayOf(MediaStore.MediaColumns.DISPLAY_NAME)
+        contentResolver.query(uri, projection, null, null, null)?.use { cursor ->
+            if (cursor.moveToFirst()) {
+                displayName = cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.MediaColumns.DISPLAY_NAME))
+            }
+        }
+        return displayName
+    }
+
 
     private fun chooseSound(buttonId: Int) {
         currentButtonId = buttonId
@@ -156,12 +197,12 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun startRecording(index: Int) {
-        val fileName = "${externalCacheDir?.absolutePath}/audiorecordtest${index}.mp3"
+        val fileName = "${externalCacheDir?.absolutePath}/audiorecordtest${index}.aac"
         recordedFilePaths[index] = fileName
 
         mediaRecorder = MediaRecorder().apply {
             setAudioSource(MediaRecorder.AudioSource.MIC)
-            setOutputFormat(MediaRecorder.OutputFormat.MPEG_2_TS)
+            setOutputFormat(MediaRecorder.OutputFormat.AAC_ADTS)
             setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
             setOutputFile(fileName)
             try {
@@ -187,8 +228,10 @@ class MainActivity : AppCompatActivity() {
         mediaRecorder = null
         isRecordingArray[index] = false
         recordButtons[index].setImageResource(android.R.drawable.ic_btn_speak_now)
-        var recordedSound = getString(R.string.recorded_sound)
-        soundTitles[index].setText(recordedSound + " " + (index + 1).toString())
+        val recordedSound = getString(R.string.recorded_sound)
+        val soundCnt = index + 1
+        val title = "$recordedSound $soundCnt"
+        soundTitles[index].setText(title)
         Toast.makeText(this, getString(R.string.recording_stopped), Toast.LENGTH_SHORT).show()
     }
 
@@ -202,31 +245,80 @@ class MainActivity : AppCompatActivity() {
 
         if (!permissions.all { ContextCompat.checkSelfPermission(this, it) == PackageManager.PERMISSION_GRANTED }) {
             ActivityCompat.requestPermissions(this, permissions, 1)
-            Toast.makeText(this, getString(R.string.permission_not_granted), Toast.LENGTH_SHORT).show()
         }
+    }
+
+    private fun handleSwitchChange() {
+        val isChecked = mixSound.isChecked
+        if (!isChecked) {
+            stopSound()
+        }
+        Toast.makeText(this, if (isChecked) "Mix Sound Enabled" else "Mix Sound Disabled", Toast.LENGTH_SHORT).show()
     }
 
     private fun stopSound() {
-        for (i in mediaPlayers.indices) {
-            mediaPlayers[i]?.stop()
-            mediaPlayers[i]?.release()
-            mediaPlayers[i] = null
-            playButtons[i].setImageResource(android.R.drawable.ic_media_play)
-            isOnPlayArray[i] = false
+        playButtons.forEachIndexed { index, button ->
+            if (isOnPlayArray[index]) {
+                stopIndividualSound(mediaPlayers[index], button, index)
+            }
         }
     }
 
-    private fun handleSwitchChange(){
-        stopSound()
-        if(mixSound.isChecked){
-            mixSound.text = getString(R.string.mix_sound_on)
-        }else{
-            mixSound.text = getString(R.string.mix_sound_off)
-        }
+    private fun addNewBar() {
+        val inflater = LayoutInflater.from(this)
+        val newBarView = inflater.inflate(R.layout.sound_bar_layout, soundsContainer, false)
+        soundsContainer.addView(newBarView)
+
+        val newSoundIndex = soundTitles.size
+
+        val newSoundTitle = newBarView.findViewById<EditText>(R.id.soundTitle)
+        val newPlayButton = newBarView.findViewById<ImageButton>(R.id.playSound)
+        val newChooseButton = newBarView.findViewById<ImageButton>(R.id.chooseSound)
+        val newRecordButton = newBarView.findViewById<ImageButton>(R.id.recordSound)
+        val newDeleteButton = newBarView.findViewById<ImageButton>(R.id.deleteSound)
+
+        soundTitles.add(newSoundTitle)
+        playButtons.add(newPlayButton)
+        chooseButtons.add(newChooseButton)
+        recordButtons.add(newRecordButton)
+        deleteButtons.add(newDeleteButton)
+        mediaPlayers.add(null)
+        soundUris.add(null)
+        isOnPlayArray.add(false)
+        isRecordingArray.add(false)
+        recordedFilePaths.add(null)
+
+        newChooseButton.setOnClickListener { chooseSound(newSoundIndex) }
+        newPlayButton.setOnClickListener { playSound(soundUris[newSoundIndex], newPlayButton, newSoundIndex) }
+        newRecordButton.setOnClickListener { toggleRecording(newSoundIndex) }
+        newDeleteButton.setOnClickListener { deleteSound(newSoundIndex) }
     }
 
-    override fun onDestroy() {
-        super.onDestroy()
-        mediaPlayers.forEach { it?.release() }
+    private fun deleteSound(index: Int) {
+        if (index < 3) {
+            soundUris[index] = null
+            soundTitles[index].setText("")
+            mediaPlayers[index]?.release()
+            mediaPlayers[index] = null
+            isOnPlayArray[index] = false
+            isRecordingArray[index] = false
+            recordedFilePaths[index] = null
+            playButtons[index].setImageResource(android.R.drawable.ic_media_play)
+            soundTitles[index].setText(getString(R.string.no_sound_selected))
+            Toast.makeText(this, "Sound $index deleted", Toast.LENGTH_SHORT).show()
+        } else {
+            soundTitles.removeAt(index)
+            playButtons.removeAt(index)
+            chooseButtons.removeAt(index)
+            recordButtons.removeAt(index)
+            deleteButtons.removeAt(index)
+            mediaPlayers.removeAt(index)
+            soundUris.removeAt(index)
+            isOnPlayArray.removeAt(index)
+            isRecordingArray.removeAt(index)
+            recordedFilePaths.removeAt(index)
+            soundsContainer.removeViewAt(index)
+            Toast.makeText(this, "Sound $index deleted", Toast.LENGTH_SHORT).show()
+        }
     }
 }
